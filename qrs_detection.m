@@ -2,8 +2,8 @@ function candidato_int = qrs_detection(fm)
 %
 %candidato_int = qrs_detection(fm)
 %
-% Función que implementa el algoritmo de Pan y Tompkins para la detección
-% de los complejos QRS en una  señal de ECG.
+% Funciï¿½n que implementa el algoritmo de Pan y Tompkins para la detecciï¿½n
+% de los complejos QRS en una  seï¿½al de ECG.
 % 
 % Entrada: 
 %      fm: vector con las fiducial mark.
@@ -27,7 +27,7 @@ rr_avg_2_int= 0;
 rr_missed_limit = 0;
 
 while  n<=length(fm),
-  if n==720, % inicialización de los umbrales
+  if n==720, % inicializaciï¿½n de los umbrales
       aux = fm(1:n);
       thr_signal_int = max(aux);
       sig_level_int = thr_signal_int;
