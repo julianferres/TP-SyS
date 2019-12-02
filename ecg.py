@@ -15,7 +15,7 @@ y-=y.mean()
 unCiclo = y[100:280]
 
 t = np.arange(len(y))
-t = t*ts*1000.0
+t = t*ts*1000.0 #Tiempo en milisengundos
 
 marcas = np.loadtxt('Datos/marcas.txt')
 if __name__ == '__main__':

@@ -7,6 +7,7 @@ from scipy.fftpack import fft
 from scipy.fftpack import fftshift
 
 
+
 """Funciones auxiliares"""
 def polosYceros (num,den, nombre, archivo,carpeta):
     z = np.roots(num)
@@ -31,16 +32,15 @@ def rtaFreq (num, den, nombre, archivo, carpeta):
     plt.title('Respuesta en frecuencia de %s'%nombre)
     plt.subplot(2,1,2)
     plt.plot(w / np.pi, np.angle(H) / np.pi)
-    plt.ylabel('Fase [rad/pi]') # fase normalizada por sobre pi 1---pi lo mismo en frecuencia
+    plt.ylabel('Fase [rad/π]') # fase normalizada por sobre pi 1---pi lo mismo en frecuencia
     plt.grid(b=1, which='both', axis='both', linewidth=0.5)
-    plt.xlabel('Frecuencia normalizada x/pi')
+    plt.xlabel('Frecuencia normalizada x/π')
     plt.show();
     plt.close()
 
 def ver_ancho_de_banda(num,den):
     [w, H] = signal.freqz(num, den)
     H = 20 * np.log10(np.abs(H))
-    print(max(H))
     l,r = -1,-1 
     for i in range(len(w)):
         if(l==-1 and H[i]>-3): #Cuando subo de -3dB, tengo el lado izq
@@ -55,7 +55,7 @@ def rtaImpulso (num, den, nombre, archivo, cant, carpeta, minx):
     x_in = np.zeros(cant+1);
     x_in[0] = 1
     y_out = signal.lfilter(num, den, x_in)
-    print(y_out)
+  
     n = np.r_[0:cant+1]
 
     fig = plt.figure(1)
@@ -72,7 +72,6 @@ def rtaImpulso (num, den, nombre, archivo, cant, carpeta, minx):
     # And a corresponding grid
     ax.grid(which='both')
 
-    print(y_out)
     plt.stem(n, y_out, 'r')
     plt.title('Respuesta al impulso de %s'%nombre)
     plt.xlim([-1 ,cant+2])
@@ -234,7 +233,6 @@ num_hh[0], num_hh[16], num_hh[17], num_hh[32] = -1/32, 1, -1, 1/32
 
 den_hh[0], den_hh[1] = 1, -1
 
-
 """DIAG POLOS Y ZEROS HH"""
 polosYceros(num_hh, den_hh,'HH','ej5_diag_pyz_hh','ej5/HH')
 
@@ -372,7 +370,7 @@ rtaFreq(num_hd,den_hd,'HD','ej8rta_freq_hd','ej8/HD')
 
 y_out_hd = filter_signal(num_hd,den_hd,y_out_hh)
 
-print(ver_ancho_de_banda(num_hd,den_hd))
+#print(ver_ancho_de_banda(num_hd,den_hd))
 
 """LINEAL DE HD"""
 [w, H] = signal.freqz(num_hd, den_hd)
@@ -394,7 +392,7 @@ plt.show();
 plt.close()
 
 
-"""RETARDO DE HL"""
+"""RETARDO DE HD"""
 
 w, gd = signal.group_delay((num_hd, den_hd))
 plt.plot(w/np.pi,gd)
@@ -410,7 +408,7 @@ plt.figure()
 plt.plot(t, y_out_hd)
 plt.title('Señal filtrada con HD')
 plt.xlabel('Tiempo [ms]')
-plt.ylabel('Amplitud [mV]')
+plt.ylabel('Amplitud')
 plt.xlim(2000, 4000)
 plt.ylim(-6, 6)
 plt.grid(which='both')
@@ -429,7 +427,7 @@ plt.figure()
 plt.plot(t,y_out_cuad)
 plt.title('Señal al cuadrado')
 plt.xlabel('Tiempo [ms]')
-plt.ylabel('Amplitud [mV]')
+plt.ylabel('Amplitud')
 plt.xlim(2000, 4000)
 plt.ylim(-1, 35)
 plt.grid(which='both')
@@ -485,7 +483,7 @@ y_out_hi = compensar_retardo( N//2, y_out_hi)
 plt.plot(t, y_out_hi)
 plt.title('Señal integrada')
 plt.xlabel('Tiempo [ms]')
-plt.ylabel('Amplitud [mV]')
+plt.ylabel('Amplitud')
 plt.xlim(2000, 4000)
 plt.ylim(-1, 10)
 plt.grid(which='both')
@@ -495,7 +493,7 @@ plt.show();
 plt.plot(t, y_out_hi)
 plt.title('Señal integrada')
 plt.xlabel('Tiempo [ms]')
-plt.ylabel('Amplitud [mV]')
+plt.ylabel('Amplitud')
 plt.xlim(2000, 4000)
 plt.ylim(-1, 20)
 plt.grid(which='both')
@@ -505,22 +503,193 @@ plt.legend(["Señal integrada","Señal al cuadrado"])
 plt.title('Señal integrada y señal al cuadrado')
 plt.show();
 
-
-
-
 #%% EJERCICIO 12 (Gold Standard algorithm)
 
-marcas_propias = qrs_detection(y_out_hi)
+nonzero = lambda x: x!=0 #Funcion que devuelve True si x no es 0
 
-marcas_desplazadas = desplazar_marcas(marcas_propias,y,30)
-plt.figure()
-plt.plot (t,marcas_propias,'go', markersize = 5)
-plt.plot (t,marcas_desplazadas,'rx', markersize = 5)
-plt.ylim(-1,1.5)
+def evaluar_performance(y_in, marcas_reales, print_header=""):
 
-plt.subplot()
+	peaks_index, properties = signal.find_peaks(y_in,height=0,distance=20)
+	peaks_altura = properties['peak_heights']
 
-plt.plot (t,y)
-plt.xlim(20000, 22000)
+	peaks_absolutos = np.zeros(len(y_in))
+	n = 0  #CONTADOR
+
+	for i in range (0,len(y_in)):
+	    if i in peaks_index:
+	        peaks_absolutos[i] = peaks_altura[n]
+	        n += 1
+
+	peaks_final = qrs_detection(peaks_absolutos)
+	marcas_mias = list(filter(nonzero,peaks_final))
+
+	cant_marcas_bien, cant_falsos_negativos = 0, 0
+
+	for m in marcas_reales:
+		if np.count_nonzero(peaks_final[int(m)-10:int(m)+10]) > 0: 	# hay al menos una marca dentro del QRS!
+			cant_marcas_bien += 1
+		else:												# no hay ninguna
+			cant_falsos_negativos += 1
+
+		if m < 10 or (m+10) >= len(peaks_final):
+			raise ValueError('Accediendo a indices invalidos')
+
+	# DEBERIA CUMPLIRSE QUE:
+	# 		len(marcas_reales) = cant_bien + cant_fn
+	# 		len(marcas_mias) = cant_bien + cant_fp - cant_fn
+
+	cant_falsos_positivos = len(marcas_mias) - cant_marcas_bien
+
+	# sanity check
+	assert(cant_marcas_bien + cant_falsos_negativos == len(marcas_reales))
+	assert((len(marcas_reales) + cant_falsos_positivos - cant_falsos_negativos) == len(marcas_mias))
+
+	eficiencia = cant_marcas_bien/len(marcas_reales) * 100
+
+	print(print_header)
+	print("Falsos Positivos: {}, Falsos Negativos: {}. Verdaderos Positivos: {}".format(cant_falsos_positivos, cant_falsos_negativos, cant_marcas_bien))
+	print("Cantidad esperada: {}. Cantidad obtenida: {}".format(len(marcas_reales), len(marcas_mias)))
+	print("Eficiencia: Cant_VP / Cant_Esperada = {}%".format(eficiencia))
+	print("\n")
+
+	return marcas_mias, eficiencia
+
+marcas_reales = np.loadtxt("Datos/marcas.txt")
+
+marcas_mias = evaluar_performance(y_out_hi, marcas_reales)
+
+
+
+# %% Ejercicio 13
+
+def calcular_ruido(y,SNR):
+    cant_muestras = len(y)
+    sumaCuadrados = sum([x**2 for x in y])
+    varianza =  1/cant_muestras * sumaCuadrados/(10**(SNR/10))
+    return np.random.normal(0,np.sqrt(varianza), cant_muestras)
+
+#Preprocesamiento de las señales
+def preprocesar(y):
+    y_out_hl = filter_signal(num_hl,den_hl,y)
+    y_out_hl = compensar_retardo(5,y_out_hl) 
+    y_out_hh = filter_signal(num_hh,den_hh,y_out_hl) 
+    y_out_hh = compensar_retardo(16,y_out_hh)
+    y_out_hd = filter_signal(num_hd,den_hd,y_out_hh)
+    y_out_hd = compensar_retardo(2,y_out_hd)
+    y_out_cuad = np.power(y_out_hd,2)
+    y_out_hi = filter_signal(num_hi,den_hi,y_out_cuad)
+    y_out_hi = compensar_retardo( N//2, y_out_hi)
+
+    return y_out_hi
+
+ruido10 = calcular_ruido(y,10)
+y_ruido10 = y+ruido10
+plt.plot(y_ruido10)
+plt.title("Señal con ruido adicionado (SNR=10dB)")
+plt.xlabel("Nro de muestra")
+plt.ylabel("Amplitud")
+plt.xlim(100,280)
+plt.ylim(-1,1.8)
 plt.show()
 
+ruido20 = calcular_ruido(y,20)
+y_ruido20 = y+ruido20
+plt.plot(y_ruido20)
+plt.title("Señal con ruido adicionado (SNR=20dB)")
+plt.xlabel("Nro de muestra")
+plt.ylabel("Amplitud")
+plt.xlim(100,280)
+plt.ylim(-1,1.8)
+plt.show()
+
+
+ruido30 = calcular_ruido(y,30)
+y_ruido30 = y+ruido30
+plt.plot(y_ruido30)
+plt.title("Señal con ruido adicionado (SNR=30dB)")
+plt.xlim(100,280)
+plt.xlabel("Nro de muestra")
+plt.ylabel("Amplitud")
+plt.ylim(-1,1.8)
+plt.show()
+
+# Performance
+y_prepro_10 = preprocesar(y_ruido10)
+evaluar_performance(y_prepro_10, marcas_reales,print_header="SNR = 10")
+
+y_prepro_20 = preprocesar(y_ruido20)
+evaluar_performance(y_prepro_20, marcas_reales,print_header="SNR = 20")
+y_prepro_30 = preprocesar(y_ruido30)
+evaluar_performance(y_prepro_30, marcas_reales,print_header="SNR = 30")
+
+#%% Ejercicio 14 (Remuestreo)
+
+##Expansor
+Y = np.zeros(9*len(y))
+#Agrego 8 ceros entre cada muestra
+for i in range(len(y)): Y[9*i] = y[i]
+
+##Pasabajos
+x = np.linspace(-7500, 7499,15000) #1500 valores enteros [-7500,7499] 
+sinc = np.sin(np.pi*x/9)/(np.pi*x) #Sinc muestreada
+sinc[15000//2] = 1/9 # Hago el limite a mano
+
+Y = np.convolve(Y,sinc)
+
+Y = compensar_retardo(7500,Y)
+#Y = np.concatenate((Y, np.zeros(7500)))
+#Y = Y[7500:]
+
+#Ploteo desde -40 a 40 de la sinc
+plt.figure()
+plt.plot(x,sinc,'x')
+plt.plot(x,sinc)
+plt.title('sin(πn/9)/(πn)')
+plt.xlabel('n')
+plt.xlim(-60,60)
+plt.ylim(-0.04,0.125)
+plt.show()
+
+##Decimador
+Y = Y[::5]
+
+# %% Plots de ciclo
+plt.plot(y)
+plt.title("Un ciclo de la señal a 200Hz")
+plt.xlabel("Numero de muestra")
+plt.ylabel("Amplitud")
+plt.xlim(100,280)
+plt.ylim(-0.6,1.5)
+plt.show()
+
+plt.plot(Y)
+plt.title("El ciclo correspondiente de la señal a 360Hz")
+plt.xlabel("Numero de muestra")
+plt.ylabel("Amplitud")
+plt.xlim(180,508) #Equivalentes a 100 y 280 en 200Hz
+plt.ylim(-0.07,0.18)
+plt.show()
+
+# %% Preprocesamiento y evaluación de performance
+
+N = 36 #Cambio el largo de la ventanaa del integrador
+marcas_reales_360 = 1.8*marcas_reales #Ajusto las marcas reales tambien
+
+Yruido10 = Y + calcular_ruido(Y,10)
+Yruido20 = Y + calcular_ruido(Y,20)
+Yruido30 = Y + calcular_ruido(Y,30)
+
+Y_prepro = preprocesar(Y)
+evaluar_performance(Y_prepro,marcas_reales_360)
+
+Y_prepro_10 = preprocesar(Yruido10)
+evaluar_performance(Y_prepro_10, marcas_reales_360,print_header="SNR = 10")
+
+Y_prepro_20 = preprocesar(Yruido20)
+evaluar_performance(Y_prepro_20, marcas_reales_360,print_header="SNR = 20")
+
+Y_prepro_30 = preprocesar(Yruido30)
+evaluar_performance(Y_prepro_30, marcas_reales_360,print_header="SNR = 30")
+
+
+# %%
