@@ -7,7 +7,7 @@ from scipy.fftpack import fft
 from scipy.fftpack import fftshift
 
 fs = 200
-
+#%%
 '''
 Espectrograma completo
 '''
@@ -20,11 +20,11 @@ plt.xlabel('Time [sec]')
 plt.savefig('graficos/specCompleto.png',dpi=300)
 
 plt.show()
-
+#%%
 
 # 5 Latidos, con diferentes ventanas
 window = signal.hann(55) # ventana de Hann de 3200 muestras
-f, t, Sxx = signal.spectrogram(y[100:1000], fs, window)
+f, t, Sxx = signal.spectrogram(y[100:1000], fs, window,noverlap = 50,nfft = 1500)
 plt.pcolormesh(t,f,Sxx)
 plt.title("Espectrograma de 5 latidos con ventana de 55 muestas.")
 plt.ylabel('Frequency [Hz]')
