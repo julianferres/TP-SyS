@@ -1,2 +1,5 @@
 # TP-SyS
-Tp de Señales y Sistemas (6674) - FIUBA
+
+Detect QRS complexes in electrocardiographic signals
+
+Pratice Lab Signals and Systems (6674) - FIUBA
